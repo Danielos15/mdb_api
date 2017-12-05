@@ -1,0 +1,22 @@
+{
+  "name": "mdb_api",
+  "version": "1.0.0",
+  "description": "Movie Database API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Danielos15/mdb_api.git"
+  },
+  "keywords": [
+    "API"
+  ],
+  "author": "danielos15@ru.is",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Danielos15/mdb_api/issues"
+  },
+  "homepage": "https://github.com/Danielos15/mdb_api#readme"
+}
