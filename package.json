@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/Danielos15/mdb_api/issues"
   },
-  "homepage": "https://github.com/Danielos15/mdb_api#readme"
+  "homepage": "https://github.com/Danielos15/mdb_api#readme",
+  "dependencies": {
+    "babel": "^6.23.0"
+  }
 }
