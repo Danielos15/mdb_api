@@ -1,6 +1,8 @@
 {
-  "name": "functions",
-  "description": "Cloud Functions for Firebase",
+  "name": "mdb_api",
+  "version": "1.0.0",
+  "description": "Movie Database API - Firebase Cloud Functions",
+  "main": "index.js",
   "scripts": {
     "serve": "firebase serve --only functions",
     "shell": "firebase experimental:functions:shell",
@@ -13,7 +15,21 @@
     "express": "^4.16.2",
     "firebase-admin": "~5.4.2",
     "firebase-functions": "^0.7.1",
-    "http": "^0.0.0"
+    "http": "^0.0.0",
+    "node-cache": "^4.1.1"
   },
-  "private": true
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Danielos15/mdb_api.git"
+  },
+  "keywords": [
+    "API"
+  ],
+  "author": "danielos15@ru.is",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Danielos15/mdb_api/issues"
+  },
+  "homepage": "https://github.com/Danielos15/mdb_api#readme"
 }
