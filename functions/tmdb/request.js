@@ -3,7 +3,7 @@ const NodeCache = require( "node-cache" );
 const TMDB_API_KEY = "77cd5f9b3c4faca9c5113422ade651e4";
 const TMDB_API_URL = "api.themoviedb.org";
 const TMDB_API_VERSION = "/3/";
-const CACHE_TTL = 1;
+const CACHE_TTL = 7200;
 
 const Cache = new NodeCache();
 
@@ -41,10 +41,14 @@ return module.exports = TMDBRequest = (path, params) => {
 				if (cache == undefined) {
 					https.request(options, (res) => {
 						res.setEncoding('utf8');
-						res.on('data', function (chunk) {
-							Cache.set(cacheKey, chunk, CACHE_TTL);
-							resolve(chunk);
+						let data = '';
+						res.on('data', (chunk) => {
+							data += chunk;
 						});
+						res.on('end', () => {
+							Cache.set(cacheKey, data, CACHE_TTL);
+							resolve(data);
+						}) ;
 					}).end();
 				} else {
 					resolve(cache)

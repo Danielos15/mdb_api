@@ -25,6 +25,7 @@ exports.moviesFromJson = (jsonString) => {
 						title: obj.title,
 						poster: getPoster(obj.poster_path),
 						rating: obj.vote_average,
+						releaseDate: obj.release_date,
 					};
 					movies.push(movie);
 				}
@@ -51,6 +52,7 @@ exports.tvShowsFromJson = (jsonString) => {
 						title: obj.name,
 						poster: getPoster(obj.poster_path),
 						rating: obj.vote_average,
+						firstAired: obj.first_air_date,
 					};
 					tvShows.push(tvShow);
 				}
