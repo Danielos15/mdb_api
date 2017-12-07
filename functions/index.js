@@ -27,6 +27,7 @@ app.get('/movies', (req, res) => {
 		'page' : req.query.page || 1,
 	};
 	let path = ["movie"];
+	// Check for availible Filters and set it else, set the default filter
 	if (MOVIE_FILTER_OPTIONS.hasOwnProperty(req.query.filter)) {
 		path.push(MOVIE_FILTER_OPTIONS[req.query.filter]);
 	} else {
@@ -58,7 +59,9 @@ app.get('/tv', (req, res) => {
 	let params = {
 		'page' : req.query.page || 1,
 	};
+
 	let path = ["tv"];
+	// Check for availible Filters and set it else, set the default filter
 	if (TV_FILTER_OPTIONS.hasOwnProperty(req.query.filter)) {
 		path.push(TV_FILTER_OPTIONS[req.query.filter]);
 	} else {
@@ -78,8 +81,8 @@ app.get('/tv/:id', (req, res) =>  {
 	TMDBRequest(['tv', req.params.id], {
 		'append_to_response': 'external_ids'
 	}).then((data) => {
-		dto.tvShowFromJson(data).then((movie) => {
-			res.send(movie);
+		dto.tvShowFromJson(data).then((tvShow) => {
+			res.send(tvShow);
 		}).catch(() => {
 			res.send(error())
 		})
@@ -89,28 +92,25 @@ app.get('/tv/:id', (req, res) =>  {
 // Get a single season from a Tv Show by ID and season number
 app.get('/tv/:id/:season', (req, res) =>  {
 	TMDBRequest(['tv', req.params.id, 'season', req.params.season]).then((data) => {
-		// TODO: Map Data to SeasonObject
-		res.send(data);
-		// dto.tvShowFromJson(data).then((movie) => {
-		// 	res.send(movie);
-		// }).catch(() => {
-		// 	res.send(error())
-		// })
+		dto.seasonFromJson(data).then((season) => {
+			res.send(season);
+		}).catch(() => {
+			res.send(error())
+		})
 	})
 });
 
-// Get a single season from a Tv Show by ID and season number
-app.get('/tv/:id/:season/:episode', (req, res) =>  {
-	TMDBRequest(['tv', req.params.id, 'season', req.params.season, 'episode', req.params.episode]).then((data) => {
-		// TODO: Map Data to episodeObject
-		res.send(data);
-		// dto.tvShowFromJson(data).then((movie) => {
-		// 	res.send(movie);
-		// }).catch(() => {
-		// 	res.send(error())
-		// })
-	})
-});
+// // Get a single season from a Tv Show by ID and season number
+// app.get('/tv/:id/:season/:episode', (req, res) =>  {
+// 	TMDBRequest(['tv', req.params.id, 'season', req.params.season, 'episode', req.params.episode]).then((data) => {
+// 		res.send(data);
+// 		// dto.tvShowFromJson(data).then((movie) => {
+// 		// 	res.send(movie);
+// 		// }).catch(() => {
+// 		// 	res.send(error())
+// 		// })
+// 	})
+// });
 //Post movie to watchlist
 app.get('/movies/:id/:movieId', (req, res) => {
 	let db = admin.database();

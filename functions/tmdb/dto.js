@@ -10,6 +10,12 @@ const TMDB_POSTER_SIZE = {
 	LARGE: "w500"
 };
 
+const TMDB_STILL_SIZE = {
+	SMALL: "w92",
+	MEDIUM: "w185",
+	LARGE: "w300",
+};
+
 // TMDB multiple Movies respons to Ours
 exports.moviesFromJson = (jsonString) => {
 	return new Promise((resolve, reject) => {
@@ -117,6 +123,25 @@ exports.tvShowFromJson = (jsonString) => {
 	});
 };
 
+exports.seasonFromJson = (jsonString) => {
+	return new Promise((resolve, reject) => {
+		try {
+			let obj = JSON.parse(jsonString);
+			let season = {
+				id: obj.id,
+				title: obj.name,
+				poster: getStill(obj.poster_path),
+				overview: obj.overview,
+				airDate: obj.air_date,
+				episodes: episodeCoverter(obj.episodes)
+			};
+			resolve(JSON.stringify(season));
+		}catch (err) {
+			reject(err);
+		}
+	});
+};
+
 // Helper Functions
 let seasonsCoverter = (seasons) => {
 	let ret = [];
@@ -133,6 +158,28 @@ let seasonsCoverter = (seasons) => {
 	return ret;
 };
 
+// Helper Functions
+let episodeCoverter = (episodes) => {
+	let ret = [];
+	for (let key in episodes) {
+		let e = episodes[key];
+		let episode = {
+			id: e.id,
+			airDate: e.air_date,
+			number: e.episode_number,
+			name: e.name,
+			overview: e.overview,
+			image: getStill(e.still_path),
+			rating: e.vote_average
+		};
+		ret.push(episode);
+	}
+	return ret;
+};
+
+let getStill = (stillPath) => {
+	return (stillPath) ? TMDB_IMAGE_URL + TMDB_STILL_SIZE.MEDIUM + stillPath : null;
+};
 let getPoster = (posterPath) => {
 	return (posterPath) ? TMDB_IMAGE_URL + TMDB_POSTER_SIZE.MEDIUM + posterPath : null;
 };
