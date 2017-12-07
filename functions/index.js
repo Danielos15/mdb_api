@@ -111,34 +111,62 @@ app.get('/tv/:id/:season', (req, res) =>  {
 // 		// })
 // 	})
 // });
+
 //Post movie to watchlist
-app.get('/movies/:id/:movieId', (req, res) => {
+app.post('/movies/:id/watchlist', (req, res) => {
 	let db = admin.database();
-	db.ref('/watchlist').child(req.params.id).push().set(req.params.movieId);
+	db.ref('/watchlist').child(req.params.id).push().set({"movieId": req.body.itemId});
 	res.send("movie set to watchlist");
 });
 
 //Post tv show to watchlist
-app.get('/tv/:id/:tvId', (req, res) => {
+app.post('/tv/:id/watchlist', (req, res) => {
 	let db = admin.database();
-	db.ref('/watchlist').child(req.params.id).push().set(req.params.movieId);
+	db.ref('/watchlist').child(req.params.id).push().set({"tvId": req.body.itemId});
 	res.send("tv show set to watchlist");
 });
 
-//Post review on movie
-app.get('/movies/:id/:movieId', (req, res) => {
+//Post movie to watched
+app.post('/movies/:id/watched', (req, res) => {
 	let db = admin.database();
-	db.ref('/watchlist').child(req.params.id).push().set(req.params.movieId);
+	db.ref('/watched').child(req.params.id).push().set({"movieId": req.body.itemId});
+	res.send("movie set to watched");
+});
+
+//Post tv show to watched
+app.post('/tv/:id/watched', (req, res) => {
+	let db = admin.database();
+	db.ref('/watched').child(req.params.id).push().set({"tvId": req.body.itemId});
+	res.send("tv show set to watched");
+});
+
+//Post review on movie
+app.post('/movies/:id/review', (req, res) => {
+	let db = admin.database();
+	db.ref('/review').child(req.params.id).push().set({"movieId": req.body.itemId, rating: req.body.review});
 	res.send("review set for movie");
 });
 
 //Post review on tv show
-app.get('/tv/:id/:tvId', (req, res) => {
+app.post('/tv/:id/review', (req, res) => {
 	let db = admin.database();
-	db.ref('/watchlist').child(req.params.id).push().set(req.params.movieId);
+	db.ref('/review').child(req.params.id).push().set({"tvId": req.body.itemId, rating: req.body.review});
 	res.send("review set for tv show");
 });
 
+//Post rating on movie
+app.post('/movies/:id/rating', (req, res) => {
+	let db = admin.database();
+	db.ref('/rating').child(req.params.id).push().set({"movieId": req.body.itemId, rating: req.body.rating});
+	res.send("rating set for movie");
+});
+
+//Post rating on tv show
+app.post('/tv/:id/rating', (req, res) => {
+	let db = admin.database();
+	db.ref('/rating').child(req.params.id).push().set({"tvId": req.body.itemId, rating: req.body.rating});
+	res.send("rating set for tv show");
+});
 
 // Expose Express API as a single Cloud Function:
 exports.api = functions.https.onRequest(app);
