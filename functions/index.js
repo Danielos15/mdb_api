@@ -115,21 +115,36 @@ app.get('/tv/:id/:season', (req, res) =>  {
 //Post movie to watchlist
 app.post('/movies/:id/watchlist', (req, res) => {
     let db = admin.database();
-	db.ref('/watchlist').child(req.params.id).child('/movies').push().set({"movieId": req.body.itemId});
-	res.send("movie set to watchlist");
+    db.ref('/watchlist').child(req.params.id).child('/movies').orderByChild('movieId').once("value", snapshot => {
+    	const data = snapshot.val();
+    	if(data){
+    		res.send("Already on watchlist");
+		} else {
+            db.ref('/watchlist').child(req.params.id).child('/movies').push().set({"movieId": req.body.itemId});
+            res.send("movie set to watchlist");
+		}
+	});
 });
 
 //Post tv show to watchlist
 app.post('/tv/:id/watchlist', (req, res) => {
     let db = admin.database();
-	db.ref('/watchlist').child(req.params.id).child('/tv').push().set({"tvId": req.body.itemId});
-	res.send("tv show set to watchlist");
+    db.ref('/watchlist').child(req.params.id).child('/tv').orderByChild('tvId').once("value", snapshot => {
+        const data = snapshot.val();
+        if(data){
+            res.send("Already on watchlist");
+        } else {
+            db.ref('/watchlist').child(req.params.id).child('/tv').push().set({"tvId": req.body.itemId});
+            res.send("tv show set to watchlist");
+        }
+    });
+
 });
 
 //Post movie to watched
 app.post('/movies/:id/watched', (req, res) => {
     let db = admin.database();
-	db.ref('/watched').child(req.params.id).push().child('/movies').set({"movieId": req.body.itemId});
+	db.ref('/watched').child(req.params.id).child('/movies').push().set({"movieId": req.body.itemId});
 	res.send("movie set to watched");
 });
 
