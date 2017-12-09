@@ -3,6 +3,7 @@ const admin = require('firebase-admin');
 const express = require('express');
 const TMDBRequest = require('./tmdb/request');
 const dto = require('./tmdb/dto');
+const FB = require('fb');
 
 const MOVIE_FILTER_OPTIONS = {
 	popular: 'popular',
@@ -18,7 +19,13 @@ const TV_FILTER_OPTIONS = {
 };
 TV_FILTER_OPTIONS.DEFAULT = TV_FILTER_OPTIONS.popular;
 
-admin.initializeApp(functions.config().firebase);
+//admin.initializeApp(functions.config().firebase);
+
+let serviceAccount = require("./serviceAccount/mdb-lokaverkefni.json");
+admin.initializeApp({
+	credential: admin.credential.cert(serviceAccount),
+	databaseURL: "https://mbd-lokaverkefni.firebaseio.com"
+});
 let app = express();
 
 // Get Most Popular Movies
@@ -115,14 +122,14 @@ app.get('/tv/:id/:season', (req, res) =>  {
 //Post movie to watchlist
 app.post('/movies/:id/watchlist', (req, res) => {
 	let db = admin.database();
-	db.ref('/watchlist').child(req.params.id).push().set({"movieId": req.body.itemId});
+	db.ref('/watchlist').child(req.params.id).child('/movies').push().set({"movieId": req.body.itemId});
 	res.send("movie set to watchlist");
 });
 
 //Post tv show to watchlist
 app.post('/tv/:id/watchlist', (req, res) => {
 	let db = admin.database();
-	db.ref('/watchlist').child(req.params.id).push().set({"tvId": req.body.itemId});
+	db.ref('/watchlist').child(req.params.id).child('/tv').push().set({"tvId": req.body.itemId});
 	res.send("tv show set to watchlist");
 });
 
@@ -143,29 +150,93 @@ app.post('/tv/:id/watched', (req, res) => {
 //Post review on movie
 app.post('/movies/:id/review', (req, res) => {
 	let db = admin.database();
-	db.ref('/review').child(req.params.id).push().set({"movieId": req.body.itemId, rating: req.body.review});
+	db.ref('/review').child(req.params.id).child('/movies').push().set({"movieId": req.body.itemId, rating: req.body.review});
 	res.send("review set for movie");
 });
 
 //Post review on tv show
 app.post('/tv/:id/review', (req, res) => {
 	let db = admin.database();
-	db.ref('/review').child(req.params.id).push().set({"tvId": req.body.itemId, rating: req.body.review});
+	db.ref('/review').child(req.params.id).child('/tv').push().set({"tvId": req.body.itemId, rating: req.body.review});
 	res.send("review set for tv show");
 });
 
 //Post rating on movie
 app.post('/movies/:id/rating', (req, res) => {
 	let db = admin.database();
-	db.ref('/rating').child(req.params.id).push().set({"movieId": req.body.itemId, rating: req.body.rating});
+	db.ref('/rating').child(req.params.id).child('/movies').push().set({"movieId": req.body.itemId, rating: req.body.rating});
 	res.send("rating set for movie");
 });
 
 //Post rating on tv show
 app.post('/tv/:id/rating', (req, res) => {
 	let db = admin.database();
-	db.ref('/rating').child(req.params.id).push().set({"tvId": req.body.itemId, rating: req.body.rating});
+	db.ref('/rating').child(req.params.id).child('/tv').push().set({"tvId": req.body.itemId, rating: req.body.rating});
 	res.send("rating set for tv show");
+});
+
+//Get all movies on the users watchlist
+app.get('/watchlist/movies/:id', (req, res) => {
+	let db = admin.database().ref('/watchlist').child(req.params.id).child('/movies');
+	let list = [];
+	db.on('value', function(snapshot){
+		snapshot.forEach(function(childSnap) {
+			list.push(childSnap.val());
+		});
+		res.send(list);
+	});
+});
+
+//Get all TV shows on the users watchlist
+app.get('/watchlist/tv/:id', (req, res) => {
+	let db = admin.database().ref('/watchlist').child(req.params.id).child('/tv');
+	let list = [];
+	db.on('value', function(snapshot){
+		snapshot.forEach(function(childSnap) {
+			list.push(childSnap.val());
+		});
+		res.send(list);
+	});
+});
+
+app.get('/fb/:id', (req, res) => {
+	admin.auth().getUser(req.params.id).then((user)=> {
+		for (let key in user.providerData) {
+			if (user.providerData.hasOwnProperty(key)) {
+				let provider = user.providerData[key];
+				if(provider.providerId === "facebook.com") {
+					let uid = provider.uid;
+					console.log(uid);
+
+					FB.options({version: 'v2.4'});
+					FB.api('oauth/access_token', {
+						client_id: '134401950604871',
+						client_secret: '93cdac2bddcb7091d89d4cce8cc72545',
+						grant_type: 'client_credentials'
+					}, function (response) {
+						if(!response || response.error) {
+							return; // TODO: Error handling
+						}
+						let accessToken = response.access_token; // GET ACCESS TOKEN FOR THE APP
+
+						let fb = FB.extend({appId: '134401950604871', appSecret: '93cdac2bddcb7091d89d4cce8cc72545'});
+						fb.setAccessToken(accessToken);
+						fb.api(`/${uid}/friends`, 'get', function (r) {
+							if(!r || r.error) {
+								console.log(!r ? 'error occurred' : r.error);
+								res.send(r);
+								return;
+							}
+							console.log('Post Id: ' + r.id);
+							res.send(r);
+						});
+					});
+				}
+			}
+		}
+	}).catch(error => {
+		res.send(error); // TODO: fix error handling
+	});
 });
 
 // Expose Express API as a single Cloud Function:

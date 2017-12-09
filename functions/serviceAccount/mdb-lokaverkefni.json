@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "mdb-lokaverkefni",
+  "private_key_id": "04207ea291791ecf2185331974c792dc2ac4621e",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDFo1Sm2Dy7DyxD\nydd3n5LIDIvj/R0o1invtLwi4f874mTXbTOoB0CBY3C3DRPwZqJf7sWiB2wmKeYI\nafe9Ur5nDvMUBQf/E4n8ESD6Weyl/YpqJgabWjD/qleaAQjxbQldVUONXWxmX1vl\n0S5mQiDpfS2LgOzsmVIoAfKbr6dKV0I9+6GYJnKkBNrua4904ZG5xlzmpz6CdwLr\noUBCM/dhK6+T7OiulM19e3TJS6KtlD5b/kOCKH/YKr3vZNsf+wm8+KVKFak9v+CX\nOEa1Ilu4GNqjwgcXuQgLxDtraPSwElPPKIP5IDweCBMfeolOSABMvic2FYX/SONM\nNrDYvJ19AgMBAAECggEAEKsQJJ7wE3nZt3RHO8uCSzGwfdXtc6UJFf8dyHaO9Bn8\nrz6CfZVYl13JNjPGjrimBFLUg2Nk3gMcND5CEP5XGJH/zJxwBDWkDLvVFpTzvgjk\n3fbyPH/qyf7JZi+k9XEthpv+SoBEK1rqtGmXJDPhJ4M39OzQQbp2Kos5G6N0B6Z8\nx5EVQSZlq3YLB7G/18rXf14vxyqPIkscg38/Vr8I6hOOlLSNA3IbMAc5IjayM1it\nxZfcsJUkHTiumJOieC26ZydRFEA1Bmi259m27UO4JvDKOaXnAjDkwziYoCIfswWt\nh41Lhgoba6hjA3mznkeuhoHCzJ+qgrOIH6PUaKIx8QKBgQDhZny8ptQpor8f+kgu\nqpRPEpxoT65fKlAV9wy+tqDW/UXQy8ytfqTOGAXN8fI7ucLyfUqEyXMpn8pSLhXU\nWvWFN5AAKt6+2LUBQKGWTEgTaTgXxYXJl1rZoLtxSSKQ9t8PsCI1/lbZ/40w4clX\n+oAbqxaBSaYaBo9iZPesttYJFwKBgQDgd/9kvyFuAlK7UV1jPQrIbG5IrLmqGLlq\nL254Jw0CjE0R3agscLXGwSDk/KHu178DskYcORYyzJbcQ6HiZGC76WjbRs1BT7GD\ndRd34HLgLUOjl/CMH7NqN242CSx/RmIJ5A2vFvIS90lnv/ATpgi8XVDPKhauvikD\nhFEFjliCiwKBgAqKmYDVKIz98IRVVzTfg2ojS69RMq1+tBoi4LS2o9UKKU63iU3/\n40NEOllEXHjQmj5u/6IwLbOfpn2rbBfvXRYq4BAx8RLp3aU+WZBG5wQJYrcx5Kzl\n6DjPXJTSv8wZz5rTOPZfe75cRkUn+hukOoOQv8+yGxOShPgsEq1AK8hnAoGACHW9\nVGi3s9O2loS8hk74pxEfHvITlUuVQWFEQpcGMIBlLzUxb2tYDoOc38R9vei3tEX1\nyn6ETanUTbzmzweFdc+YOhtzBPEh+ZhiKAx3h+ds0y+Yy08ujeRE7RhvauSWMVU9\nBspQmVJkm9pqC/OIBMFnmEc3z6IvHYjRHOp+f30CgYBXwnvtmFKYYaRbtHt7SmsL\nMp8We7yLNUWn1w/2uoNeCL62vqMg1VaQmNA4bfMQeW/6hsrlhPjJ7EsVnEw0zOxh\nWKA+5+wjgxybKXy+RdFJyuuL+a0nqa8RPpStgjZk1yb3BP7cYBWOdpT9jW/O/P5Z\nnJWlcdg+FZ57tr8bFMmt+w==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-2rfrv@mdb-lokaverkefni.iam.gserviceaccount.com",
+  "client_id": "103150855231638205189",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://accounts.google.com/o/oauth2/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-2rfrv%40mdb-lokaverkefni.iam.gserviceaccount.com"
+}
