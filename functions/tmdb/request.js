@@ -48,13 +48,16 @@ return module.exports = TMDBRequest = (path, params) => {
 						res.on('end', () => {
 							Cache.set(cacheKey, data, CACHE_TTL);
 							resolve(data);
-						}) ;
+						});
+						res.on('error', () => {
+							reject('Error inn https request');
+						})
 					}).end();
 				} else {
-					resolve(cache)
+					resolve(cache);
 				}
 			} else {
-				reject();
+				reject('Unable to connect to TMDB');
 			}
 		});
 	})

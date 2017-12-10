@@ -3,6 +3,7 @@ const TMDB_URL = "https://www.themoviedb.org/";
 const TMDB_MOVIES = "movie/";
 const TMDB_TV = "tv/";
 const TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/";
+const PLACEHOLDER_IMAGE_URL = 'https://lh4.googleusercontent.com/zJtY55PjyfeSMsLgq6jTn-cLRBx1GvFAoYOU0H7YY8DVYJ6iLXtyoy9ZXELHbrLvdT77icl4rtQYXA=w1366-h637';
 const TMDB_POSTER_SIZE = {
 	TINY: "w92",
 	SMALL: "w185",
@@ -20,8 +21,11 @@ const TMDB_STILL_SIZE = {
 exports.moviesFromJson = (jsonString) => {
 	return new Promise((resolve, reject) => {
 		try {
-			let res = JSON.parse(jsonString);
-			let results = res.results;
+			let res = jsonString;
+			if (typeof res === 'string') {
+				res = JSON.parse(res);
+			}
+			let results = res.results || res;
 			let movies = [];
 			for (let key in results) {
 				if (results.hasOwnProperty(key)) {
@@ -47,8 +51,11 @@ exports.moviesFromJson = (jsonString) => {
 exports.tvShowsFromJson = (jsonString) => {
 	return new Promise((resolve, reject) => {
 		try {
-			let res = JSON.parse(jsonString);
-			let results = res.results;
+			let res = jsonString;
+			if (typeof res === 'string') {
+				res = JSON.parse(res);
+			}
+			let results = res.results || res;
 			let tvShows = [];
 			for (let key in results) {
 				if (results.hasOwnProperty(key)) {
@@ -74,14 +81,17 @@ exports.tvShowsFromJson = (jsonString) => {
 exports.movieFromJson = (jsonString) => {
 	return new Promise((resolve, reject) => {
 		try {
-			let obj = JSON.parse(jsonString);
+			let obj = jsonString;
+			if (typeof obj === 'string') {
+				obj = JSON.parse(obj);
+			}
 			let movie = {
 				id: obj.id,
 				title: obj.title,
 				overview: obj.overview,
 				tagline: obj.tagline,
 				poster: getPoster(obj.poster_path),
-				tmdbUrl: getTmdbUrl(obj.id),
+				tmdbUrl: getTmdbUrl(obj.id, TMDB_MOVIES),
 				imdbUrl: getImdbUrl(obj.imdb_id),
 				rating: obj.vote_average,
 				releaseDate: obj.release_date,
@@ -99,14 +109,17 @@ exports.movieFromJson = (jsonString) => {
 exports.tvShowFromJson = (jsonString) => {
 	return new Promise((resolve, reject) => {
 		try {
-			let obj = JSON.parse(jsonString);
+			let obj = jsonString;
+			if (typeof obj === 'string') {
+				obj = JSON.parse(obj);
+			}
 			let tvShow = {
 				id: obj.id,
 				title: obj.name,
 				overview: obj.overview,
 				tagline: obj.tagline,
 				poster: getPoster(obj.poster_path),
-				tmdbUrl: getTmdbUrl(obj.id),
+				tmdbUrl: getTmdbUrl(obj.id, TMDB_TV),
 				imdbUrl: getImdbUrl(obj.external_ids.imdb_id),
 				rating: obj.vote_average,
 				releaseDate: obj.release_date,
@@ -178,18 +191,19 @@ let episodeCoverter = (episodes) => {
 };
 
 let getStill = (stillPath) => {
-	return (stillPath) ? TMDB_IMAGE_URL + TMDB_STILL_SIZE.MEDIUM + stillPath : null;
+	return (stillPath) ? TMDB_IMAGE_URL + TMDB_STILL_SIZE.LARGE + stillPath : null;
 };
 let getPoster = (posterPath) => {
-	return (posterPath) ? TMDB_IMAGE_URL + TMDB_POSTER_SIZE.MEDIUM + posterPath : null;
+	return (posterPath) ? TMDB_IMAGE_URL + TMDB_POSTER_SIZE.MEDIUM + posterPath : PLACEHOLDER_IMAGE_URL;
 };
 
 let getImdbUrl = (imdb_id) => {
 	return (imdb_id) ? IMDB_URL + imdb_id : null;
 };
 
-let getTmdbUrl = (tmdb_id) => {
-	return (tmdb_id) ? TMDB_URL + TMDB_MOVIES + tmdb_id : null;
+let getTmdbUrl = (tmdb_id, prefix) => {
+	prefix = prefix || TMDB_MOVIES;
+	return (tmdb_id) ? TMDB_URL + prefix + tmdb_id : null;
 };
 
 return module.exports;

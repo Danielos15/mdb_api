@@ -19,14 +19,60 @@ const TV_FILTER_OPTIONS = {
 };
 TV_FILTER_OPTIONS.DEFAULT = TV_FILTER_OPTIONS.popular;
 
+const ORDER = {
+	asc: 'asc',
+	desc : 'desc'
+};
+
+const SORT = {
+	rating: 'vote_average',
+	popular: 'popularity',
+};
+
 //admin.initializeApp(functions.config().firebase);
 
 let serviceAccount = require("./serviceAccount/mdb-lokaverkefni.json");
 admin.initializeApp({
 	credential: admin.credential.cert(serviceAccount),
-	databaseURL: "https://mbd-lokaverkefni.firebaseio.com"
+	databaseURL: functions.config().firebase.databaseURL
 });
 let app = express();
+
+// Search for Movie by string
+app.get('/search/movies/:search', (req, res) => {
+	let params = {
+		'page' : req.query.page || 1,
+		'query' : req.params.search
+	};
+	let path = ['search', 'movie'];
+	TMDBRequest(path, params).then((data) => {
+		data = JSON.parse(data);
+		data.results.sort(dynamicSort(SORT.popular, ORDER.desc));
+		dto.moviesFromJson(data).then((movies) => {
+			res.send(movies);
+		}).catch(() => {
+			res.send(error())
+		})
+	});
+});
+
+// Search for Tv Show by string
+app.get('/search/tv/:search', (req, res) => {
+	let params = {
+		'page' : req.query.page || 1,
+		'query' : encodeURI(req.params.search)
+	};
+	let path = ['search', 'tv'];
+	TMDBRequest(path, params).then((data) => {
+		data = JSON.parse(data);
+		data.results.sort(dynamicSort(SORT.popular, ORDER.desc));
+		dto.tvShowsFromJson(data).then((movies) => {
+			res.send(movies);
+		}).catch(() => {
+			res.send(error())
+		})
+	});
+});
 
 // Get Most Popular Movies
 app.get('/movies', (req, res) => {
@@ -107,17 +153,6 @@ app.get('/tv/:id/:season', (req, res) =>  {
 	})
 });
 
-// // Get a single season from a Tv Show by ID and season number
-// app.get('/tv/:id/:season/:episode', (req, res) =>  {
-// 	TMDBRequest(['tv', req.params.id, 'season', req.params.season, 'episode', req.params.episode]).then((data) => {
-// 		res.send(data);
-// 		// dto.tvShowFromJson(data).then((movie) => {
-// 		// 	res.send(movie);
-// 		// }).catch(() => {
-// 		// 	res.send(error())
-// 		// })
-// 	})
-// });
 
 //Post movie to watchlist
 app.post('/movies/:id/watchlist', (req, res) => {
@@ -189,28 +224,99 @@ app.post('/tv/:id/rating', (req, res) => {
 	res.send("rating set for tv show");
 });
 
-app.get('/watchlist/movies/:id', (req, res) => {
-    let db = admin.database().ref('/watchlist').child(req.params.id).child('/movies');
-	let list = [];
+app.get('/watchlist/tv/:userId', (req, res) => {
+    let db = admin.database().ref('/watchlist').child(req.params.userId).child('/tv');
+	let ids = [];
 	db.on('value', function(snapshot){
 		snapshot.forEach(function(childSnap) {
-			list.push(childSnap.val());
+			ids.push(childSnap.val().tvId);
 		});
-		res.send(list);
+		getItemsByIds('tv', ids).then(items => {
+			if (SORT.hasOwnProperty(req.query.sort)) {
+				let sort = SORT[req.query.sort];
+				if (ORDER.hasOwnProperty(req.query.ord)) {
+					let ord = ORDER[req.query.ord];
+					items.sort(dynamicSort(sort, ord));
+				} else {
+					items.sort(dynamicSort(sort, ORDER.desc));
+				}
+			}
+			dto.tvShowsFromJson(items).then(items => {
+				res.send(items);
+			}).catch(errors => {
+				res.send(error(errors, 400));
+			});
+		}).catch(errors => {
+			res.send(error(errors, 400));
+		});
 	});
 });
 
-
-app.get('/watchlist/tv/:id', (req, res) => {
-    let db = admin.database().ref('/watchlist').child(req.params.id).child('/tv');
-	let list = [];
+app.get('/watchlist/movies/:userId', (req, res) => {
+	let db = admin.database().ref('/watchlist').child(req.params.userId).child('/movies');
+	let ids = [];
 	db.on('value', function(snapshot){
 		snapshot.forEach(function(childSnap) {
-			list.push(childSnap.val());
+			ids.push(childSnap.val().movieId);
 		});
-		res.send(list);
+		getItemsByIds('movie', ids).then(items => {
+			if (SORT.hasOwnProperty(req.query.sort)) {
+				let sort = SORT[req.query.sort];
+				if (ORDER.hasOwnProperty(req.query.ord)) {
+					let ord = ORDER[req.query.ord];
+					items.sort(dynamicSort(sort, ord));
+				} else {
+					items.sort(dynamicSort(sort, ORDER.desc));
+				}
+			}
+			dto.moviesFromJson(items).then(items => {
+				res.send(items);
+			}).catch(errors => {
+				res.send(error(errors, 400));
+			});
+		}).catch(errors => {
+			res.send(error(errors, 400));
+		});
 	});
 });
+
+let getItemsByIds = (type, ids) => {
+	return new Promise((resolve, reject) => {
+		let _ids = [];
+
+		if (!Array.isArray(ids)) {
+			_ids.push(ids);
+		} else {
+			_ids = ids || [];
+		}
+
+		let promises = [];
+		for (let key in _ids) {
+			if (_ids.hasOwnProperty(key)) {
+				let id = _ids[key];
+				let promise = TMDBRequest([type, id]);
+				promises.push(promise);
+			}
+		}
+
+		Promise.all(promises).then(values => {
+			let data = [];
+			for(let key in values) {
+				if (values.hasOwnProperty(key)) {
+					let value = JSON.parse(values[key]);
+					if (!value.hasOwnProperty('status_code')) {
+						data.push(value);
+					}
+				}
+			}
+			resolve(data);
+		}).catch(error => {
+			reject(error);
+		})
+	});
+};
+
+
 
 app.get('/fb/:id', (req, res) => {
 	admin.auth().getUser(req.params.id).then((user)=> {
@@ -252,6 +358,14 @@ app.get('/fb/:id', (req, res) => {
 // Expose Express API as a single Cloud Function:
 exports.api = functions.https.onRequest(app);
 
+
+function dynamicSort(property, order) {
+	let sortOrder = (order =='asc') ? 1 : -1;
+	return function (a,b) {
+		let result = (a[property] < b[property]) ? -1 : (a[property] > b[property]) ? 1 : 0;
+		return result * sortOrder;
+	}
+}
 let error = (message, code) => {
 	code = code || '404';
 	message = message || 'Not Found';
