@@ -98,16 +98,24 @@ app.get('/movies', (req, res) => {
 
 // Get a single Movie by ID
 app.get('/movies/:id', (req, res) =>  {
-	TMDBRequest(["movie", req.params.id]).then((data) => {
-		dto.movieFromJson(data).then((movie) => {
-			getMDBRatingForMovie(res.params.id).then(rating => {
-				console.log(rating);
-			});
-			res.send(movie);
-		}).catch(() => {
-			res.send(error())
-		})
-	})
+    TMDBRequest(["movie", req.params.id]).then((data) => {
+        dto.movieFromJson(data).then((movie) => {
+            let db = admin.database();
+            let rating = 0.0;
+            let size = 0;
+            db.ref('/rating').child('/movies').child(req.params.id).once("value", snapshot => {
+                size = snapshot.numChildren();
+                snapshot.forEach(item => {
+                    rating += parseFloat(item.val().rating);
+                });
+                let movieObj = JSON.parse(movie);
+                movieObj.mdbRating = rating / size;
+                res.send(JSON.stringify(movieObj));
+            });
+        }).catch(() => {
+            res.send(error())
+        })
+    })
 });
 
 // Get Most Popular Tv Shows
@@ -138,22 +146,18 @@ app.get('/tv/:id', (req, res) =>  {
 		'append_to_response': 'external_ids'
 	}).then((data) => {
 		dto.tvShowFromJson(data).then((tvShow) => {
-            /*let rating =  new Promise((resolve, reject) => {
-                let db = admin.database();
-                console.log(req.params.id);
-                db.ref('/rating').once("value", snapshot => {
-                    console.log("boom " + snapshot.val());
-                    resolve(snapshot.val());
-                });
-            });*/
-            //console.log(rating);
             let db = admin.database();
-            console.log(req.params.id);
+            let rating = 0.0;
+            let size = 0;
             db.ref('/rating').child('/tv').child(req.params.id).once("value", snapshot => {
-                console.log("boom " + snapshot.val());
-                //resolve(snapshot.val());
+            	size = snapshot.numChildren();
+            	snapshot.forEach(item => {
+            		rating += parseFloat(item.val().rating);
+				});
+                let tvShowObj = JSON.parse(tvShow);
+                tvShowObj.mdbRating = rating / size;
+                res.send(JSON.stringify(tvShowObj));
             });
-			res.send(tvShow);
 		}).catch(() => {
 			res.send(error())
 		})
