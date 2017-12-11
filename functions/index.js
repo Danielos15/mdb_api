@@ -100,6 +100,9 @@ app.get('/movies', (req, res) => {
 app.get('/movies/:id', (req, res) =>  {
 	TMDBRequest(["movie", req.params.id]).then((data) => {
 		dto.movieFromJson(data).then((movie) => {
+			getMDBRatingForMovie(res.params.id).then(rating => {
+				console.log(rating);
+			});
 			res.send(movie);
 		}).catch(() => {
 			res.send(error())
@@ -135,6 +138,21 @@ app.get('/tv/:id', (req, res) =>  {
 		'append_to_response': 'external_ids'
 	}).then((data) => {
 		dto.tvShowFromJson(data).then((tvShow) => {
+            /*let rating =  new Promise((resolve, reject) => {
+                let db = admin.database();
+                console.log(req.params.id);
+                db.ref('/rating').once("value", snapshot => {
+                    console.log("boom " + snapshot.val());
+                    resolve(snapshot.val());
+                });
+            });*/
+            //console.log(rating);
+            let db = admin.database();
+            console.log(req.params.id);
+            db.ref('/rating').child('/tv').child(req.params.id).once("value", snapshot => {
+                console.log("boom " + snapshot.val());
+                //resolve(snapshot.val());
+            });
 			res.send(tvShow);
 		}).catch(() => {
 			res.send(error())
@@ -227,17 +245,16 @@ app.post('/tv/:id/review', (req, res) => {
 //Post rating on movie
 app.post('/movies/:id/rating', (req, res) => {
     let db = admin.database();
-    db.ref('/rating').child(req.params.id).child('/movies').orderByChild('movieId').equalTo(req.body.itemId).once("value", snapshot => {
+    db.ref('/rating').child('/movies').child(req.body.itemId).orderByChild("userId").equalTo(req.params.id).once("value", snapshot => {
         const data = snapshot.val();
         if(data){
-        	snapshot.forEach(function(data) {
-        		console.log("1");
-                db.ref('/rating').child(req.params.id).child('/movies').child(data.key).update({"movieId": req.body.itemId, rating: req.body.bodyItem});
-                res.send("Already on watched");
-            });
+            snapshot.forEach(function(data) {
+            	db.ref('/rating').child('/movies').child(req.body.itemId).child(data.key).update({"userId": req.params.id, rating: req.body.bodyItem});
+                });
+            res.send("Already on watched");
         } else {
-            db.ref('/rating').child(req.params.id).child('/movies').push().set({"movieId": req.body.itemId, rating: req.body.bodyItem});
-            res.send("movie set to watched");
+            db.ref('/rating').child('/movies').child(req.body.itemId).push().set({"userId": req.params.id, rating: req.body.bodyItem});
+            res.send("Movie set to watched");
         }
     });
 });
@@ -245,16 +262,15 @@ app.post('/movies/:id/rating', (req, res) => {
 //Post rating on tv show
 app.post('/tv/:id/rating', (req, res) => {
     let db = admin.database();
-    db.ref('/rating').child(req.params.id).child('/tv').orderByChild('tvId').equalTo(req.body.itemId).once("value", snapshot => {
+    db.ref('/rating').child('/tv').child(req.body.itemId).orderByChild("userId").equalTo(req.params.id).once("value", snapshot => {
         const data = snapshot.val();
         if(data){
             snapshot.forEach(function(data) {
-                console.log("1");
-                db.ref('/rating').child(req.params.id).child('/tv').child(data.key).update({"tvId": req.body.itemId, rating: req.body.bodyItem});
-                res.send("Already on watched");
+                db.ref('/rating').child('/tv').child(req.body.itemId).child(data.key).update({"userId": req.params.id, rating: req.body.bodyItem});
             });
+            res.send("Already on watched");
         } else {
-            db.ref('/rating').child(req.params.id).child('/tv').push().set({"tvId": req.body.itemId, rating: req.body.bodyItem});
+            db.ref('/rating').child('/tv').child(req.body.itemId).push().set({"userId": req.params.id, rating: req.body.bodyItem});
             res.send("Tv show set to watched");
         }
     });
@@ -407,8 +423,6 @@ let getItemsByIds = (type, ids) => {
 		})
 	});
 };
-
-
 
 app.get('/fb/:id', (req, res) => {
 	admin.auth().getUser(req.params.id).then((user)=> {
