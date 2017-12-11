@@ -367,6 +367,31 @@ app.get('/fb/:id', (req, res) => {
 	});
 });
 
+app.get('/msg', (req, res) => {
+	let token = 'eP-QKnIix_o:APA91bHj8xFED9B7uWMCZZLCsn4GjmI9zF_W4_uLpfbKvBgHtU-YO-Ri2pRNcpJt-UmnuXGQxGcsNvKXLWVufvI9YsQLCwiRSN3xucxpSApN1FNYGy5VfPeBicN-x_CV4qiPTkAIS2XN';
+
+	let payload = {
+		data: {
+			id: "1418",
+			type: "tv",
+			title: "Svanur Just rated a Movie",
+			text: "My review of this movie in some ammount of words..."
+
+		}
+	};
+
+// Send a message to the device corresponding to the provided
+// registration token.
+	admin.messaging().sendToDevice(token, payload)
+		.then(function(response) {
+			res.send("Successfully sent message:");
+
+		})
+		.catch(function(error) {
+			res.send("Error sending message:");
+		});
+});
+
 // Expose Express API as a single Cloud Function:
 exports.api = functions.https.onRequest(app);
 
@@ -379,6 +404,11 @@ exports.facebookId = functions.auth.user().onCreate(function(event) {
 exports.removeFacebookId = functions.auth.user().onDelete(function(event) {
 	let facebookId = facebook.getFacebookId(event.data);
 	return admin.database().ref("/users/").child(facebookId).remove();
+});
+
+exports.sendRatingMsg = functions.database.ref('/rating/{type}/{itemId}').onWrite(event => {
+	const data = event.data.val();
+	console.log(data);
 });
 
 
