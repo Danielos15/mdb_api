@@ -98,13 +98,24 @@ app.get('/movies', (req, res) => {
 
 // Get a single Movie by ID
 app.get('/movies/:id', (req, res) =>  {
-	TMDBRequest(["movie", req.params.id]).then((data) => {
-		dto.movieFromJson(data).then((movie) => {
-			res.send(movie);
-		}).catch(() => {
-			res.send(error())
-		})
-	})
+    TMDBRequest(["movie", req.params.id]).then((data) => {
+        dto.movieFromJson(data).then((movie) => {
+            let db = admin.database();
+            let rating = 0.0;
+            let size = 0;
+            db.ref('/rating').child('/movies').child(req.params.id).once("value", snapshot => {
+                size = snapshot.numChildren();
+                snapshot.forEach(item => {
+                    rating += parseFloat(item.val().rating);
+                });
+                let movieObj = JSON.parse(movie);
+                movieObj.mdbRating = rating / size;
+                res.send(JSON.stringify(movieObj));
+            });
+        }).catch(() => {
+            res.send(error())
+        })
+    })
 });
 
 // Get Most Popular Tv Shows
@@ -135,7 +146,18 @@ app.get('/tv/:id', (req, res) =>  {
 		'append_to_response': 'external_ids'
 	}).then((data) => {
 		dto.tvShowFromJson(data).then((tvShow) => {
-			res.send(tvShow);
+            let db = admin.database();
+            let rating = 0.0;
+            let size = 0;
+            db.ref('/rating').child('/tv').child(req.params.id).once("value", snapshot => {
+            	size = snapshot.numChildren();
+            	snapshot.forEach(item => {
+            		rating += parseFloat(item.val().rating);
+				});
+                let tvShowObj = JSON.parse(tvShow);
+                tvShowObj.mdbRating = rating / size;
+                res.send(JSON.stringify(tvShowObj));
+            });
 		}).catch(() => {
 			res.send(error())
 		})
@@ -210,7 +232,7 @@ app.post('/tv/:id/watched', (req, res) => {
     });
 });
 
-//Post review on movie
+/*//Post review on movie
 app.post('/movies/:id/review', (req, res) => {
     let db = admin.database();
 	db.ref('/review').child(req.params.id).child('/movies').push().set({"movieId": req.body.itemId, rating: req.body.bodyItem});
@@ -222,20 +244,40 @@ app.post('/tv/:id/review', (req, res) => {
     let db = admin.database();
 	db.ref('/review').child(req.params.id).child('/tv').push().set({"tvId": req.body.itemId, rating: req.body.bodyItem});
 	res.send("review set for tv show");
-});
+});*/
 
 //Post rating on movie
 app.post('/movies/:id/rating', (req, res) => {
     let db = admin.database();
-	db.ref('/rating').child(req.params.id).child('/movies').push().set({"movieId": req.body.itemId, rating: req.body.bodyItem});
-	res.send("rating set for movie");
+    db.ref('/rating').child('/movies').child(req.body.itemId).orderByChild("userId").equalTo(req.params.id).once("value", snapshot => {
+        const data = snapshot.val();
+        if(data){
+            snapshot.forEach(function(data) {
+            	db.ref('/rating').child('/movies').child(req.body.itemId).child(data.key).update({"userId": req.params.id, rating: req.body.bodyItem});
+                });
+            res.send("Already on watched");
+        } else {
+            db.ref('/rating').child('/movies').child(req.body.itemId).push().set({"userId": req.params.id, rating: req.body.bodyItem});
+            res.send("Movie set to watched");
+        }
+    });
 });
 
 //Post rating on tv show
 app.post('/tv/:id/rating', (req, res) => {
     let db = admin.database();
-	db.ref('/rating').child(req.params.id).child('/tv').push().set({"tvId": req.body.itemId, rating: req.body.bodyItem});
-	res.send("rating set for tv show");
+    db.ref('/rating').child('/tv').child(req.body.itemId).orderByChild("userId").equalTo(req.params.id).once("value", snapshot => {
+        const data = snapshot.val();
+        if(data){
+            snapshot.forEach(function(data) {
+                db.ref('/rating').child('/tv').child(req.body.itemId).child(data.key).update({"userId": req.params.id, rating: req.body.bodyItem});
+            });
+            res.send("Already on watched");
+        } else {
+            db.ref('/rating').child('/tv').child(req.body.itemId).push().set({"userId": req.params.id, rating: req.body.bodyItem});
+            res.send("Tv show set to watched");
+        }
+    });
 });
 
 app.get('/watchlist/tv/:userId', (req, res) => {
@@ -294,6 +336,62 @@ app.get('/watchlist/movies/:userId', (req, res) => {
 	});
 });
 
+app.get('/watched/tv/:userId', (req, res) => {
+    let db = admin.database().ref('/watched').child(req.params.userId).child('/tv');
+    let ids = [];
+    db.on('value', function(snapshot){
+        snapshot.forEach(function(childSnap) {
+            ids.push(childSnap.val().tvId);
+        });
+        getItemsByIds('tv', ids).then(items => {
+            if (SORT.hasOwnProperty(req.query.sort)) {
+                let sort = SORT[req.query.sort];
+                if (ORDER.hasOwnProperty(req.query.ord)) {
+                    let ord = ORDER[req.query.ord];
+                    items.sort(dynamicSort(sort, ord));
+                } else {
+                    items.sort(dynamicSort(sort, ORDER.desc));
+                }
+            }
+            dto.tvShowsFromJson(items).then(items => {
+                res.send(items);
+            }).catch(errors => {
+                res.send(error(errors, 400));
+            });
+        }).catch(errors => {
+            res.send(error(errors, 400));
+        });
+    });
+});
+
+app.get('/watched/movies/:userId', (req, res) => {
+    let db = admin.database().ref('/watched').child(req.params.userId).child('/movies');
+    let ids = [];
+    db.on('value', function(snapshot){
+        snapshot.forEach(function(childSnap) {
+            ids.push(childSnap.val().movieId);
+        });
+        getItemsByIds('movie', ids).then(items => {
+            if (SORT.hasOwnProperty(req.query.sort)) {
+                let sort = SORT[req.query.sort];
+                if (ORDER.hasOwnProperty(req.query.ord)) {
+                    let ord = ORDER[req.query.ord];
+                    items.sort(dynamicSort(sort, ord));
+                } else {
+                    items.sort(dynamicSort(sort, ORDER.desc));
+                }
+            }
+            dto.moviesFromJson(items).then(items => {
+                res.send(items);
+            }).catch(errors => {
+                res.send(error(errors, 400));
+            });
+        }).catch(errors => {
+            res.send(error(errors, 400));
+        });
+    });
+});
+
 let getItemsByIds = (type, ids) => {
 	return new Promise((resolve, reject) => {
 		let _ids = [];
@@ -329,8 +427,6 @@ let getItemsByIds = (type, ids) => {
 		})
 	});
 };
-
-
 
 app.get('/fb/:id', (req, res) => {
 	admin.auth().getUser(req.params.id).then((user)=> {
