@@ -3,7 +3,7 @@ const admin = require('firebase-admin');
 const express = require('express');
 const TMDBRequest = require('./tmdb/request');
 const dto = require('./tmdb/dto');
-const FB = require('fb');
+const facebook = require('./facebook/request');
 
 const MOVIE_FILTER_OPTIONS = {
 	popular: 'popular',
@@ -320,43 +320,52 @@ let getItemsByIds = (type, ids) => {
 
 app.get('/fb/:id', (req, res) => {
 	admin.auth().getUser(req.params.id).then((user)=> {
-		for (let key in user.providerData) {
-			if (user.providerData.hasOwnProperty(key)) {
-				let provider = user.providerData[key];
-				if(provider.providerId === "facebook.com") {
-					let uid = provider.uid;
-
-					FB.options({version: 'v2.11'});
-					FB.api('oauth/access_token', {
-						client_id: '134401950604871',
-						client_secret: '93cdac2bddcb7091d89d4cce8cc72545',
-						grant_type: 'client_credentials'
-					}, function (response) {
-						if(!response || response.error) {
-							return; // TODO: fix error handling
+		let facebookId = facebook.getFacebookId(user);
+		facebook.getFriends(facebookId).then(friends => {
+			let promises = [];
+			friends.forEach((friend) => {
+				let promise = new Promise((resolve, reject) => {
+					admin.database().ref("/fb-users/").child(friend.id).on('value', (snap) =>{
+						let data = snap.val();
+						friend.fbId = friend.id;
+						delete friend.id;
+						if (data !== null) {
+							friend.uid = data.uid;
+						} else {
+							friend.uid = null;
 						}
-						let accessToken = response.access_token; // GET ACCESS TOKEN FOR THE APP
-
-						let fb = FB.extend({appId: '134401950604871', appSecret: '93cdac2bddcb7091d89d4cce8cc72545'});
-						fb.setAccessToken(accessToken);
-						fb.api(`/${uid}/friends`, 'get', function (r) {
-							if(!r || r.error) {
-								res.send(r);
-								return; // TODO: fix error handling
-							}
-							res.send(r);
-						});
+						resolve(friend);
 					});
-				}
-			}
-		}
+				});
+				promises.push(promise);
+
+				Promise.all(promises).then(values => {
+					res.send(values);
+				})
+			});
+		}).catch(err => {
+			res.status(400);
+			res.send(error(err, 400));
+		});
 	}).catch(error => {
+		res.status(400);
 		res.send(error); // TODO: fix error handling
 	});
 });
 
 // Expose Express API as a single Cloud Function:
 exports.api = functions.https.onRequest(app);
+
+exports.facebookId = functions.auth.user().onCreate(function(event) {
+	let uid = event.data.uid;
+	let facebookId = facebook.getFacebookId(event.data);
+	return admin.database().ref('/fb-users').child(facebookId).set({"uid": uid});
+});
+
+exports.removeFacebookId = functions.auth.user().onDelete(function(event) {
+	let facebookId = facebook.getFacebookId(event.data);
+	return admin.database().ref("/users/").child(facebookId).remove();
+});
 
 
 function dynamicSort(property, order) {
@@ -377,3 +386,5 @@ let error = (message, code) => {
 
 	return JSON.stringify(errorObj);
 };
+
+return module.exports;
