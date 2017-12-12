@@ -29,7 +29,10 @@ const SORT = {
 	popular: 'popularity',
 };
 
-//admin.initializeApp(functions.config().firebase);
+const TYPE = {
+	'tv': 'tv show',
+	'movies': 'movie'
+};
 
 let serviceAccount = require("./serviceAccount/mdb-lokaverkefni.json");
 admin.initializeApp({
@@ -174,7 +177,6 @@ app.get('/tv/:id/:season', (req, res) =>  {
 		})
 	})
 });
-
 
 //Post movie to watchlist
 app.post('/movies/:id/watchlist', (req, res) => {
@@ -392,6 +394,180 @@ app.get('/watched/movies/:userId', (req, res) => {
     });
 });
 
+app.post('/token', (req, res) => {
+	let db = admin.database().ref('/token');
+	let userId = req.body.userId;
+	let token = req.body.token;
+
+	db.child(userId).push().set({'token': token}).then(value => {
+		res.send('added to db?');
+	}).catch(err => {
+		res.status(400);
+		res.send('Error');
+	});
+});
+
+app.get('/fb/:id', (req, res) => {
+	admin.auth().getUser(req.params.id).then((user)=> {
+		let facebookId = facebook.getFacebookId(user);
+		facebook.getFriends(facebookId).then(friends => {
+			// let promises = [];
+			// friends.forEach((friend) => {
+			// 	console.log(getUidFromFacebookId(friend.id));
+			// 	let promise = new Promise((resolve, reject) => {
+			// 		admin.database().ref("/fb-users/").child(friend.id).on('value', (snap) =>{
+			// 			// let data = snap.val();
+			// 			// friend.fbId = friend.id;
+			// 			// delete friend.id;
+			// 			// if (data !== null) {
+			// 			// 	friend.uid = data.uid;
+			// 			// } else {
+			// 			// 	friend.uid = null;
+			// 			// }
+			// 			resolve(friend);
+			// 		});
+			// 	});
+			// 	promises.push(promise);
+			// });
+			// Promise.all(promises).then(values => {
+			// 	res.send(values);
+			// })
+			res.send(friends);
+		}).catch(err => {
+			res.status(400);
+			res.send(error(err, 400));
+		});
+	}).catch(error => {
+		res.status(400);
+		res.send(error); // TODO: fix error handling
+	});
+});
+
+app.get('/msg/:token', (req, res) => {
+	let token = req.params.token;
+	let payload = {
+		data: {
+			id: "1418",
+			type: "movies",
+			title: "Svanur Just rated a Movie",
+			text: "My review of this movie in some ammount of words..."
+		}
+	};
+
+// Send a message to the device corresponding to the provided
+// registration token.
+	admin.messaging().sendToDevice(token, payload)
+		.then(function(response) {
+			res.send("Successfully sent message:");
+
+		})
+		.catch(function(error) {
+			res.send("Error sending message:");
+		});
+});
+
+app.get('/test', (req, res) => {
+	const data = req.query;
+	const params = req.query;
+	const promises = [];
+
+	admin.auth().getUser(data.userId).then((user)=> {
+		let payload = {
+			data: {
+				id: params.itemId,
+				type: params.type,
+				title: "New rating added",
+				text: user.displayName + " just rated a " + TYPE[params.type],
+			}
+		};
+		let facebookId = facebook.getFacebookId(user);
+		facebook.getFriends(facebookId).then(friends => {
+			friends.forEach((friend) => {
+				admin.database().ref("/fb-users/").child(friend.id).on('value', (snap) =>{
+					let data = snap.val();
+					if (data) {
+						let uid = snap.val().uid;
+						admin.database().ref('/token').child(uid).on('value', tokens => {
+							tokens = tokens.val();
+							if (tokens) {
+								for (let key in tokens){
+									if (tokens.hasOwnProperty(key)) {
+										let token = tokens[key];
+										if (token.hasOwnProperty("token")) {
+											promises.push(admin.messaging().sendToDevice(token["token"], payload));
+										}
+									}
+								}
+
+							}
+						});
+					}
+				});
+			});
+		});
+	});
+	Promise.all(promises).then(values => {
+		res.send(values);
+	})
+});
+// Expose Express API as a single Cloud Function:
+exports.api = functions.https.onRequest(app);
+
+exports.userAdded = functions.auth.user().onCreate(function(event) {
+	let uid = event.data.uid;
+	let facebookId = facebook.getFacebookId(event.data);
+	return admin.database().ref('/fb-users').child(facebookId).set({"uid": uid});
+});
+
+exports.userRemoved = functions.auth.user().onDelete(function(event) {
+	let facebookId = facebook.getFacebookId(event.data);
+	let p1 = admin.database.ref("/token").child(event.data.uid).remove();
+	let p2 = admin.database().ref("/fb-users/").child(facebookId).remove();
+	return Promise.all(p1, p2);
+});
+
+exports.sendRatingMsg = functions.database.ref('/rating/{type}/{itemId}/{junk}').onWrite(event => {
+	const data = event.data.val();
+	const params = event.params;
+	const promises = [];
+
+	admin.auth().getUser(data.userId).then((user)=> {
+		let payload = {
+			data: {
+				id: params.itemId,
+				type: params.type,
+				title: "New rating added",
+				text: user.displayName + " just rated a " + TYPE[params.type],
+			}
+		};
+		let facebookId = facebook.getFacebookId(user);
+		facebook.getFriends(facebookId).then(friends => {
+			friends.forEach((friend) => {
+				admin.database().ref("/fb-users/").child(friend.id).on('value', (snap) =>{
+					let snap = snap.val();
+					if (snap) {
+						admin.database().ref('/token').child(snap.uid).on('value', usersTokens => {
+							usersTokens = usersTokens.val();
+							if (usersTokens) {
+								for (let key in usersTokens){
+									if (usersTokens.hasOwnProperty(key)) {
+										let tokens = usersTokens[key];
+										if (tokens.hasOwnProperty("token")) {
+											let token = tokens["token"];
+											promises.push(admin.messaging().sendToDevice(token, payload));
+										}
+									}
+								}
+							}
+						});
+					}
+				});
+			});
+		});
+	});
+	return Promise.all(promises);
+});
+
 let getItemsByIds = (type, ids) => {
 	return new Promise((resolve, reject) => {
 		let _ids = [];
@@ -428,93 +604,14 @@ let getItemsByIds = (type, ids) => {
 	});
 };
 
-app.get('/fb/:id', (req, res) => {
-	admin.auth().getUser(req.params.id).then((user)=> {
-		let facebookId = facebook.getFacebookId(user);
-		facebook.getFriends(facebookId).then(friends => {
-			let promises = [];
-			friends.forEach((friend) => {
-				let promise = new Promise((resolve, reject) => {
-					admin.database().ref("/fb-users/").child(friend.id).on('value', (snap) =>{
-						let data = snap.val();
-						friend.fbId = friend.id;
-						delete friend.id;
-						if (data !== null) {
-							friend.uid = data.uid;
-						} else {
-							friend.uid = null;
-						}
-						resolve(friend);
-					});
-				});
-				promises.push(promise);
-
-				Promise.all(promises).then(values => {
-					res.send(values);
-				})
-			});
-		}).catch(err => {
-			res.status(400);
-			res.send(error(err, 400));
-		});
-	}).catch(error => {
-		res.status(400);
-		res.send(error); // TODO: fix error handling
-	});
-});
-
-app.get('/msg', (req, res) => {
-	let token = 'eP-QKnIix_o:APA91bHj8xFED9B7uWMCZZLCsn4GjmI9zF_W4_uLpfbKvBgHtU-YO-Ri2pRNcpJt-UmnuXGQxGcsNvKXLWVufvI9YsQLCwiRSN3xucxpSApN1FNYGy5VfPeBicN-x_CV4qiPTkAIS2XN';
-
-	let payload = {
-		data: {
-			id: "1418",
-			type: "tv",
-			title: "Svanur Just rated a Movie",
-			text: "My review of this movie in some ammount of words..."
-
-		}
-	};
-
-// Send a message to the device corresponding to the provided
-// registration token.
-	admin.messaging().sendToDevice(token, payload)
-		.then(function(response) {
-			res.send("Successfully sent message:");
-
-		})
-		.catch(function(error) {
-			res.send("Error sending message:");
-		});
-});
-
-// Expose Express API as a single Cloud Function:
-exports.api = functions.https.onRequest(app);
-
-exports.facebookId = functions.auth.user().onCreate(function(event) {
-	let uid = event.data.uid;
-	let facebookId = facebook.getFacebookId(event.data);
-	return admin.database().ref('/fb-users').child(facebookId).set({"uid": uid});
-});
-
-exports.removeFacebookId = functions.auth.user().onDelete(function(event) {
-	let facebookId = facebook.getFacebookId(event.data);
-	return admin.database().ref("/users/").child(facebookId).remove();
-});
-
-exports.sendRatingMsg = functions.database.ref('/rating/{type}/{itemId}').onWrite(event => {
-	const data = event.data.val();
-	console.log(data);
-});
-
-
-function dynamicSort(property, order) {
+let dynamicSort = (property, order) => {
 	let sortOrder = (order =='asc') ? 1 : -1;
 	return function (a,b) {
 		let result = (a[property] < b[property]) ? -1 : (a[property] > b[property]) ? 1 : 0;
 		return result * sortOrder;
 	}
-}
+};
+
 let error = (message, code) => {
 	code = code || '404';
 	message = message || 'Not Found';
@@ -525,6 +622,10 @@ let error = (message, code) => {
 	};
 
 	return JSON.stringify(errorObj);
+};
+
+let getUidFromFacebookId = (facebookId) => {
+
 };
 
 return module.exports;
