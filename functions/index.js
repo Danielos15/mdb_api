@@ -411,28 +411,26 @@ app.get('/fb/:id', (req, res) => {
 	admin.auth().getUser(req.params.id).then((user)=> {
 		let facebookId = facebook.getFacebookId(user);
 		facebook.getFriends(facebookId).then(friends => {
-			// let promises = [];
-			// friends.forEach((friend) => {
-			// 	console.log(getUidFromFacebookId(friend.id));
-			// 	let promise = new Promise((resolve, reject) => {
-			// 		admin.database().ref("/fb-users/").child(friend.id).on('value', (snap) =>{
-			// 			// let data = snap.val();
-			// 			// friend.fbId = friend.id;
-			// 			// delete friend.id;
-			// 			// if (data !== null) {
-			// 			// 	friend.uid = data.uid;
-			// 			// } else {
-			// 			// 	friend.uid = null;
-			// 			// }
-			// 			resolve(friend);
-			// 		});
-			// 	});
-			// 	promises.push(promise);
-			// });
-			// Promise.all(promises).then(values => {
-			// 	res.send(values);
-			// })
-			res.send(friends);
+			let promises = [];
+			friends.forEach((friend) => {
+				let promise = new Promise((resolve, reject) => {
+					admin.database().ref("/fb-users/").child(friend.id).on('value', (snap) =>{
+						let data = snap.val();
+						friend.fbId = friend.id;
+						delete friend.id;
+						if (data !== null) {
+							friend.uid = data.uid;
+						} else {
+							friend.uid = null;
+						}
+						resolve(friend);
+					});
+				});
+				promises.push(promise);
+			});
+			Promise.all(promises).then(values => {
+				res.send(values);
+			});
 		}).catch(err => {
 			res.status(400);
 			res.send(error(err, 400));
@@ -443,73 +441,6 @@ app.get('/fb/:id', (req, res) => {
 	});
 });
 
-app.get('/msg/:token', (req, res) => {
-	let token = req.params.token;
-	let payload = {
-		data: {
-			id: "1418",
-			type: "movies",
-			title: "Svanur Just rated a Movie",
-			text: "My review of this movie in some ammount of words..."
-		}
-	};
-
-// Send a message to the device corresponding to the provided
-// registration token.
-	admin.messaging().sendToDevice(token, payload)
-		.then(function(response) {
-			res.send("Successfully sent message:");
-
-		})
-		.catch(function(error) {
-			res.send("Error sending message:");
-		});
-});
-
-app.get('/test', (req, res) => {
-	const data = req.query;
-	const params = req.query;
-	const promises = [];
-
-	admin.auth().getUser(data.userId).then((user)=> {
-		let payload = {
-			data: {
-				id: params.itemId,
-				type: params.type,
-				title: "New rating added",
-				text: user.displayName + " just rated a " + TYPE[params.type],
-			}
-		};
-		let facebookId = facebook.getFacebookId(user);
-		facebook.getFriends(facebookId).then(friends => {
-			friends.forEach((friend) => {
-				admin.database().ref("/fb-users/").child(friend.id).on('value', (snap) =>{
-					let data = snap.val();
-					if (data) {
-						let uid = snap.val().uid;
-						admin.database().ref('/token').child(uid).on('value', tokens => {
-							tokens = tokens.val();
-							if (tokens) {
-								for (let key in tokens){
-									if (tokens.hasOwnProperty(key)) {
-										let token = tokens[key];
-										if (token.hasOwnProperty("token")) {
-											promises.push(admin.messaging().sendToDevice(token["token"], payload));
-										}
-									}
-								}
-
-							}
-						});
-					}
-				});
-			});
-		});
-	});
-	Promise.all(promises).then(values => {
-		res.send(values);
-	})
-});
 // Expose Express API as a single Cloud Function:
 exports.api = functions.https.onRequest(app);
 
@@ -544,7 +475,7 @@ exports.sendRatingMsg = functions.database.ref('/rating/{type}/{itemId}/{junk}')
 		facebook.getFriends(facebookId).then(friends => {
 			friends.forEach((friend) => {
 				admin.database().ref("/fb-users/").child(friend.id).on('value', (snap) =>{
-					let snap = snap.val();
+					snap = snap.val();
 					if (snap) {
 						admin.database().ref('/token').child(snap.uid).on('value', usersTokens => {
 							usersTokens = usersTokens.val();
@@ -622,10 +553,6 @@ let error = (message, code) => {
 	};
 
 	return JSON.stringify(errorObj);
-};
-
-let getUidFromFacebookId = (facebookId) => {
-
 };
 
 return module.exports;

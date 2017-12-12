@@ -3,7 +3,7 @@ const TMDB_URL = "https://www.themoviedb.org/";
 const TMDB_MOVIES = "movie/";
 const TMDB_TV = "tv/";
 const TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/";
-const PLACEHOLDER_IMAGE_URL = 'https://lh4.googleusercontent.com/zJtY55PjyfeSMsLgq6jTn-cLRBx1GvFAoYOU0H7YY8DVYJ6iLXtyoy9ZXELHbrLvdT77icl4rtQYXA=w1366-h637';
+const PLACEHOLDER_IMAGE_URL = 'http://oi67.tinypic.com/2qkndow.jpg';
 const TMDB_POSTER_SIZE = {
 	TINY: "w92",
 	SMALL: "w185",
