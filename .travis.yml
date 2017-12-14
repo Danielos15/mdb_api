@@ -2,7 +2,9 @@ language: node_js
 node_js:
   - "iojs"
   - "6"
-
+script:
+  - cd functions
+  - yarn test
 deploy:
   provider: firebase
   token:
