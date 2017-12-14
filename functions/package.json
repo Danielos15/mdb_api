@@ -11,7 +11,7 @@
     "logs": "firebase functions:log",
     "jest": "jest",
     "test": "nyc mocha",
-    "cover": "nyc --reporter=html --reporter=text mocha",
+    "cover": "nyc --reporter=html --reporter=text mocha"
   },
   "dependencies": {
     "body-parser": "^1.18.2",
