@@ -28,21 +28,19 @@ exports.moviesFromJson = (jsonString) => {
 			let results = res.results || res;
 			let movies = [];
 			for (let key in results) {
-				if (results.hasOwnProperty(key)) {
-					let obj = results[key];
-					let movie = {
-						id: obj.id,
-						title: obj.title,
-						poster: getPoster(obj.poster_path),
-						rating: obj.vote_average,
-						releaseDate: obj.release_date,
-					};
-					movies.push(movie);
-				}
+				let obj = results[key];
+				let movie = {
+					id: obj.id,
+					title: obj.title,
+					poster: this.getPoster(obj.poster_path),
+					rating: obj.vote_average,
+					releaseDate: obj.release_date,
+				};
+				movies.push(movie);
 			}
 			resolve(JSON.stringify(movies));
 		}catch (err) {
-			reject(err);
+			reject("Unable to parse Json");
 		}
 	});
 };
@@ -58,21 +56,19 @@ exports.tvShowsFromJson = (jsonString) => {
 			let results = res.results || res;
 			let tvShows = [];
 			for (let key in results) {
-				if (results.hasOwnProperty(key)) {
-					let obj = results[key];
-					let tvShow = {
-						id: obj.id,
-						title: obj.name,
-						poster: getPoster(obj.poster_path),
-						rating: obj.vote_average,
-						firstAired: obj.first_air_date,
-					};
-					tvShows.push(tvShow);
-				}
+				let obj = results[key];
+				let tvShow = {
+					id: obj.id,
+					title: obj.name,
+					poster: this.getPoster(obj.poster_path),
+					rating: obj.vote_average,
+					firstAired: obj.first_air_date,
+				};
+				tvShows.push(tvShow);
 			}
 			resolve(JSON.stringify(tvShows));
 		}catch (err) {
-			reject(err);
+			reject("Unable to parse Json");
 		}
 	});
 };
@@ -90,9 +86,9 @@ exports.movieFromJson = (jsonString) => {
 				title: obj.title,
 				overview: obj.overview,
 				tagline: obj.tagline,
-				poster: getPoster(obj.poster_path),
-				tmdbUrl: getTmdbUrl(obj.id, TMDB_MOVIES),
-				imdbUrl: getImdbUrl(obj.imdb_id),
+				poster: this.getPoster(obj.poster_path),
+				tmdbUrl: this.getTmdbUrl(obj.id, TMDB_MOVIES),
+				imdbUrl: this.getImdbUrl(obj.imdb_id),
 				rating: obj.vote_average,
 				releaseDate: obj.release_date,
 				runtime: obj.runtime,
@@ -100,12 +96,12 @@ exports.movieFromJson = (jsonString) => {
 			};
 			resolve(JSON.stringify(movie));
 		}catch (err) {
-			reject(err);
+			reject("Unable to parse Json");
 		}
 	});
 };
 
-// TMDB single Movies respons to Ours
+// TMDB single Tv Show respons to Ours
 exports.tvShowFromJson = (jsonString) => {
 	return new Promise((resolve, reject) => {
 		try {
@@ -118,24 +114,25 @@ exports.tvShowFromJson = (jsonString) => {
 				title: obj.name,
 				overview: obj.overview,
 				tagline: obj.tagline,
-				poster: getPoster(obj.poster_path),
-				tmdbUrl: getTmdbUrl(obj.id, TMDB_TV),
-				imdbUrl: getImdbUrl(obj.external_ids.imdb_id),
+				poster: this.getPoster(obj.poster_path),
+				tmdbUrl: this.getTmdbUrl(obj.id, TMDB_TV),
+				imdbUrl: this.getImdbUrl(obj.external_ids.imdb_id),
 				rating: obj.vote_average,
 				releaseDate: obj.release_date,
 				runtime: obj.runtime,
 				genres: obj.genres,
 				totalEpisodes: obj.number_of_episodes,
-				seasons: seasonsCoverter(obj.seasons),
+				seasons: this.seasonsCoverter(obj.seasons),
 				status: obj.status,
 			};
 			resolve(JSON.stringify(tvShow));
 		}catch (err) {
-			reject(err);
+			reject("Unable to parse Json");
 		}
 	});
 };
 
+// TMDB Seasons to Ours
 exports.seasonFromJson = (jsonString) => {
 	return new Promise((resolve, reject) => {
 		try {
@@ -143,20 +140,20 @@ exports.seasonFromJson = (jsonString) => {
 			let season = {
 				id: obj.id,
 				title: obj.name,
-				poster: getStill(obj.poster_path),
+				poster: this.getStill(obj.poster_path),
 				overview: obj.overview,
 				airDate: obj.air_date,
-				episodes: episodeCoverter(obj.episodes)
+				episodes: this.episodeCoverter(obj.episodes)
 			};
 			resolve(JSON.stringify(season));
 		}catch (err) {
-			reject(err);
+			reject("Unable to parse Json");
 		}
 	});
 };
 
-// Helper Functions
-let seasonsCoverter = (seasons) => {
+// * Helper Functions * //
+exports.seasonsCoverter = (seasons) => {
 	let ret = [];
 	for (let key in seasons) {
 		let s = seasons[key];
@@ -164,15 +161,14 @@ let seasonsCoverter = (seasons) => {
 			id: s.id,
 			airDate: s.air_date,
 			number: s.season_number,
-			poster: getPoster(s.poster_path)
+			poster: this.getPoster(s.poster_path)
 		};
 		ret.push(season);
 	}
 	return ret;
 };
 
-// Helper Functions
-let episodeCoverter = (episodes) => {
+exports.episodeCoverter = (episodes) => {
 	let ret = [];
 	for (let key in episodes) {
 		let e = episodes[key];
@@ -182,7 +178,7 @@ let episodeCoverter = (episodes) => {
 			number: e.episode_number,
 			name: e.name,
 			overview: e.overview,
-			image: getStill(e.still_path),
+			image: this.getStill(e.still_path),
 			rating: e.vote_average
 		};
 		ret.push(episode);
@@ -190,20 +186,19 @@ let episodeCoverter = (episodes) => {
 	return ret;
 };
 
-let getStill = (stillPath) => {
+exports.getStill = (stillPath) => {
 	return (stillPath) ? TMDB_IMAGE_URL + TMDB_STILL_SIZE.LARGE + stillPath : null;
 };
-let getPoster = (posterPath) => {
+
+exports.getPoster = (posterPath) => {
 	return (posterPath) ? TMDB_IMAGE_URL + TMDB_POSTER_SIZE.MEDIUM + posterPath : PLACEHOLDER_IMAGE_URL;
 };
 
-let getImdbUrl = (imdb_id) => {
+exports.getImdbUrl = (imdb_id) => {
 	return (imdb_id) ? IMDB_URL + imdb_id : null;
 };
 
-let getTmdbUrl = (tmdb_id, prefix) => {
+exports.getTmdbUrl = (tmdb_id, prefix) => {
 	prefix = prefix || TMDB_MOVIES;
 	return (tmdb_id) ? TMDB_URL + prefix + tmdb_id : null;
 };
-
-return module.exports;

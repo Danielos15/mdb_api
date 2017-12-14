@@ -1,5 +1,4 @@
 const FB = require('fb');
-
 const APP_ID = '134401950604871';
 const APP_SECRET = '93cdac2bddcb7091d89d4cce8cc72545';
 
@@ -37,5 +36,3 @@ exports.getFriends = (facebookUserId) => {
 		});
 	})
 };
-
-return module.exports;

@@ -8,13 +8,15 @@
     "shell": "firebase experimental:functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "jest": "jest",
+    "test": "nyc mocha",
+    "cover": "nyc --reporter=html --reporter=text mocha"
   },
   "dependencies": {
-    "body-parser": "^1.18.2",
     "express": "^4.16.2",
     "fb": "^2.0.0",
-    "firebase-admin": "~5.4.2",
+    "firebase-admin": "^5.4.2",
     "firebase-functions": "^0.7.1",
     "http": "^0.0.0",
     "node-cache": "^4.1.1"
@@ -32,5 +34,27 @@
   "bugs": {
     "url": "https://github.com/Danielos15/mdb_api/issues"
   },
-  "homepage": "https://github.com/Danielos15/mdb_api#readme"
+  "homepage": "https://github.com/Danielos15/mdb_api#readme",
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "jest": "^21.2.1",
+    "mocha": "^4.0.1",
+    "nock": "^9.1.4",
+    "nyc": "^11.3.0",
+    "supertest": "^3.0.0"
+  },
+  "jest": {
+    "collectCoverage": true,
+    "unmockedModulePathPatterns": [
+      "functions/node_modules/nock"
+    ]
+  },
+  "nyc": {
+    "exclude": [
+      "**/*.mock.js",
+      "**/*.test.js",
+      "mocks",
+      "test"
+    ]
+  }
 }
