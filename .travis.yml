@@ -6,6 +6,7 @@ script:
   - cd functions
   - yarn
   - yarn test
+  - cd ..
 deploy:
   provider: firebase
   token:
