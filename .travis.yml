@@ -1,9 +1,10 @@
 language: node_js
 node_js:
-  - "iojs"
+  - "node"
   - "6"
 script:
   - cd functions
+  - yarn
   - yarn test
 deploy:
   provider: firebase
