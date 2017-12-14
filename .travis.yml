@@ -6,7 +6,6 @@ script:
   - cd functions
   - yarn
   - yarn test
-  - yarn coveralls
   - cd ..
   - npm install -G firebase-tools
 after_success:
