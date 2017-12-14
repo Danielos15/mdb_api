@@ -10,7 +10,7 @@ script:
   - cd ..
   - npm install -G firebase-tools
 after_success:
-  - yarn coveralls
+  - firebase deploy
 deploy:
   provider: firebase
   token:
